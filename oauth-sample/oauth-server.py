@@ -31,7 +31,9 @@ def init_db():
         CREATE TABLE IF NOT EXISTS refresh_tokens (
             token TEXT PRIMARY KEY,
             client_id TEXT,
-            expires_at INTEGER
+            expires_at INTEGER,
+            ip_address TEXT,
+            user_agent TEXT
         )
     """)
     conn.commit()
@@ -68,11 +70,11 @@ def mark_auth_code_used(code):
     conn.commit()
     conn.close()
 
-def save_refresh_token(token, client_id):
+def save_refresh_token(token, client_id, ip_address, user_agent):
     expires_at = int(time.time()) + (7 * 24 * 60 * 60) # 7 days
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("INSERT INTO refresh_tokens (token, client_id, expires_at) VALUES (?, ?, ?)", (token, client_id, expires_at))
+    c.execute("INSERT INTO refresh_tokens (token, client_id, expires_at, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)", (token, client_id, expires_at, ip_address, user_agent))
     conn.commit()
     conn.close()
 
@@ -120,7 +122,9 @@ def token():
     mark_auth_code_used(code)
     access_token = jwt.encode({"sub": client_id, "exp": time.time() + 3600}, SECRET_KEY, algorithm=ALGORITHM)
     refresh_token = secrets.token_urlsafe(32)
-    save_refresh_token(refresh_token, client_id)
+    ip_address = request.remote_addr
+    user_agent = request.headers.get("User-Agent")
+    save_refresh_token(refresh_token, client_id, ip_address, user_agent)
     return jsonify({"access_token": access_token, "token_type": "Bearer", "refresh_token": refresh_token})
 
 @app.route("/refresh", methods=["POST"])
@@ -131,10 +135,12 @@ def refresh():
         return jsonify({"error": "invalid refresh_token"}), 400
     if time.time() > stored_token[2]:
         return jsonify({"error": "refresh_token expired"}), 400
+    if stored_token[3] != request.remote_addr or stored_token[4] != request.headers.get("User-Agent"):
+        return jsonify({"error": "refresh_token mismatch"}), 400
     delete_refresh_token(refresh_token)
     new_access_token = jwt.encode({"sub": stored_token[1], "exp": time.time() + 3600}, SECRET_KEY, algorithm=ALGORITHM)
     new_refresh_token = secrets.token_urlsafe(32)
-    save_refresh_token(new_refresh_token, stored_token[1])
+    save_refresh_token(new_refresh_token, stored_token[1], request.remote_addr, request.headers.get("User-Agent"))
     return jsonify({"access_token": new_access_token, "token_type": "Bearer", "refresh_token": new_refresh_token})
 
 @app.route("/protected")

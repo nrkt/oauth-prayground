@@ -23,6 +23,8 @@ http://127.0.0.1:5001/authorize?client_id=client123&redirect_uri=http://localhos
 4. Get access token
 ```sh
 curl -X POST http://127.0.0.1:5001/token \
+     -H "X-Forwarded-For: 192.168.1.100" \
+     -H "User-Agent: CustomAgent/1.0" \
      -d "client_id=client123" \
      -d "client_secret=secret123" \
      -d "code=<code>"
@@ -48,7 +50,10 @@ curl -H "Authorization: Bearer <access_token>" http://127.0.0.1:5001/protected
 ```
 6. Refresh token
 ```sh
-❯ curl -X POST http://127.0.0.1:5001/refresh -d "refresh_token=..."
+curl -X POST http://127.0.0.1:5001/refresh \
+     -H "X-Forwarded-For: 192.168.1.100" \
+     -H "User-Agent: CustomAgent/1.0" \
+     -d "refresh_token=..."
 ```
 -> response
 ```
