@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth2.0 Sample Test</title>
+</head>
+<body>
+    <h1>OAuth2.0 Test UI</h1>
+    
+    <button onclick="authorize()">Get Authorization Code</button>
+    <p>Authorization Code: <span id="auth_code"></span></p>
+    
+    <button onclick="getToken()">Get Access Token</button>
+    <p>Access Token: <span id="access_token"></span></p>
+    <p>Refresh Token: <span id="refresh_token"></span></p>
+    
+    <button onclick="refresh()">Update Access Token</button>
+    
+    <script>
+        const clientId = "client123";
+        const clientSecret = "secret123";
+        const redirectUri = "http://localhost:5001/callback";
+        let authCode = "";
+        let accessToken = "";
+        let refreshToken = "";
+        
+        function authorize() {
+            window.location.href = `http://localhost:5001/authorize?client_id=${clientId}&redirect_uri=${redirectUri}`;
+        }
+        
+        async function getToken() {
+            authCode = prompt("Input Authorization Code:");
+            document.getElementById("auth_code").textContent = authCode;
+            
+            const response = await fetch("http://localhost:5001/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `client_id=${clientId}&client_secret=${clientSecret}&code=${authCode}`
+            });
+            const data = await response.json();
+            accessToken = data.access_token;
+            refreshToken = data.refresh_token;
+            
+            document.getElementById("access_token").textContent = accessToken;
+            document.getElementById("refresh_token").textContent = refreshToken;
+        }
+        
+        async function refresh() {
+            const response = await fetch("http://localhost:5001/refresh", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `refresh_token=${refreshToken}`
+            });
+            const data = await response.json();
+            accessToken = data.access_token;
+            refreshToken = data.refresh_token;
+            
+            document.getElementById("access_token").textContent = accessToken;
+            document.getElementById("refresh_token").textContent = refreshToken;
+        }
+    </script>
+</body>
+</html>

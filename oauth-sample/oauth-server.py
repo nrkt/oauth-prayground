@@ -1,10 +1,12 @@
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify, redirect, render_template
+from flask_cors import CORS
 import jwt
 import time
 import sqlite3
 import secrets
 
 app = Flask(__name__)
+CORS(app)
 SECRET_KEY = "your_secret_key"
 DB_FILE = "oauth.db"
 ALGORITHM = "HS256"
@@ -156,6 +158,10 @@ def protected():
         return jsonify({"error": "token_expired"}), 401
     except jwt.InvalidTokenError:
         return jsonify({"error": "invalid_token"}), 401
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 if __name__ == "__main__":
     init_db()
