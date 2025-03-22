@@ -27,6 +27,13 @@ def init_db():
             used INTEGER DEFAULT 0
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+            token TEXT PRIMARY KEY,
+            client_id TEXT,
+            expires_at INTEGER
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -61,6 +68,22 @@ def mark_auth_code_used(code):
     conn.commit()
     conn.close()
 
+def save_refresh_token(token, client_id):
+    expires_at = int(time.time()) + (7 * 24 * 60 * 60) # 7 days
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("INSERT INTO refresh_tokens (token, client_id, expires_at) VALUES (?, ?, ?)", (token, client_id, expires_at))
+    conn.commit()
+    conn.close()
+
+def get_refresh_token(token):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT * FROM refresh_tokens WHERE token = ?", (token,))
+    refresh_token = c.fetchone()
+    conn.close()
+    return refresh_token
+
 @app.route("/authorize")
 def authorize():
     client_id = request.args.get("client_id")
@@ -89,6 +112,19 @@ def token():
         return jsonify({"error": "code_expired"}), 400
     mark_auth_code_used(code)
     access_token = jwt.encode({"sub": client_id, "exp": time.time() + 3600}, SECRET_KEY, algorithm=ALGORITHM)
+    refresh_token = secrets.token_urlsafe(32)
+    save_refresh_token(refresh_token, client_id)
+    return jsonify({"access_token": access_token, "token_type": "Bearer", "refresh_token": refresh_token})
+
+@app.route("/refresh", methods=["POST"])
+def refresh():
+    refresh_token = request.form.get("refresh_token")
+    stored_token = get_refresh_token(refresh_token)
+    if not stored_token:
+        return jsonify({"error": "invalid refresh_token"}), 400
+    if time.time() > stored_token[2]:
+        return jsonify({"error": "refresh_token expired"}), 400
+    access_token = jwt.encode({"sub": stored_token[1], "exp": time.time() + 3600}, SECRET_KEY, algorithm=ALGORITHM)
     return jsonify({"access_token": access_token, "token_type": "Bearer"})
 
 @app.route("/protected")
