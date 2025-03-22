@@ -84,6 +84,13 @@ def get_refresh_token(token):
     conn.close()
     return refresh_token
 
+def delete_refresh_token(token):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("DELETE FROM refresh_tokens WHERE token = ?", (token,))
+    conn.commit()
+    conn.close()
+
 @app.route("/authorize")
 def authorize():
     client_id = request.args.get("client_id")
@@ -124,8 +131,11 @@ def refresh():
         return jsonify({"error": "invalid refresh_token"}), 400
     if time.time() > stored_token[2]:
         return jsonify({"error": "refresh_token expired"}), 400
-    access_token = jwt.encode({"sub": stored_token[1], "exp": time.time() + 3600}, SECRET_KEY, algorithm=ALGORITHM)
-    return jsonify({"access_token": access_token, "token_type": "Bearer"})
+    delete_refresh_token(refresh_token)
+    new_access_token = jwt.encode({"sub": stored_token[1], "exp": time.time() + 3600}, SECRET_KEY, algorithm=ALGORITHM)
+    new_refresh_token = secrets.token_urlsafe(32)
+    save_refresh_token(new_refresh_token, stored_token[1])
+    return jsonify({"access_token": new_access_token, "token_type": "Bearer", "refresh_token": new_refresh_token})
 
 @app.route("/protected")
 def protected():

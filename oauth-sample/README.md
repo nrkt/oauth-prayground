@@ -31,6 +31,7 @@ curl -X POST http://127.0.0.1:5001/token \
 ```
 {
     "access_token": "eyJhbGciOiJIUzI1...",
+    "refresh_token": "...",
     "token_type": "Bearer"
 }
 ```
@@ -43,5 +44,16 @@ curl -H "Authorization: Bearer <access_token>" http://127.0.0.1:5001/protected
 {
     "message": "Access granted",
     "user": "client123"
+}
+```
+6. Refresh token
+```sh
+❯ curl -X POST http://127.0.0.1:5001/refresh -d "refresh_token=..."
+```
+-> response
+```
+{
+  "access_token": "eyJhbGciOiJIUzI1...",
+  "token_type": "Bearer"
 }
 ```
