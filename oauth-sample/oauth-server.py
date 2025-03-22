@@ -19,6 +19,14 @@ def init_db():
             redirect_uri TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS auth_codes (
+            code TEXT PRIMARY KEY,
+            client_id TEXT,
+            expires_at INTEGER,
+            used INTEGER DEFAULT 0
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -30,6 +38,29 @@ def get_client(client_id):
     conn.close()
     return client
 
+def save_auth_code(code, client_id):
+    expires_at = int(time.time()) + 300 # Code valid for 5 minutes
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("INSERT INTO auth_codes (code, client_id, expires_at) VALUES (?, ?, ?)", (code, client_id, expires_at))
+    conn.commit()
+    conn.close()
+
+def get_auth_code(code):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT * FROM auth_codes WHERE code = ?", (code,))
+    auth_code = c.fetchone()
+    conn.close()
+    return auth_code
+
+def mark_auth_code_used(code):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE auth_codes SET used = 1 WHERE code = ?", (code,))
+    conn.commit()
+    conn.close()
+
 @app.route("/authorize")
 def authorize():
     client_id = request.args.get("client_id")
@@ -38,6 +69,7 @@ def authorize():
     if not client or client[2] != redirect_uri:
         return jsonify({"error": "invalid_client"}), 400
     code = secrets.token_urlsafe(16)
+    save_auth_code(code, client_id)
     return redirect(f"{redirect_uri}?code={code}")
 
 @app.route("/token", methods=["POST"])
@@ -46,8 +78,16 @@ def token():
     client_secret = request.form.get("client_secret")
     code = request.form.get("code")
     client = get_client(client_id)
+    auth_code = get_auth_code(code)
     if not client or client[1] != client_secret:
         return jsonify({"error": "invalid_client"}), 400
+    if not auth_code or auth_code[1] != client_id:
+        return jsonify({"error": "invalid_code"}), 400
+    if auth_code[3] == 1:
+        return jsonify({"error": "code_already_used"}), 400
+    if time.time() > auth_code[2]:
+        return jsonify({"error": "code_expired"}), 400
+    mark_auth_code_used(code)
     access_token = jwt.encode({"sub": client_id, "exp": time.time() + 3600}, SECRET_KEY, algorithm=ALGORITHM)
     return jsonify({"access_token": access_token, "token_type": "Bearer"})
 
