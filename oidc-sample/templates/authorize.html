@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorize</title>
+</head>
+<body>
+    <h2>Authorization Request</h2>
+    <p>The client is requesting access with scope: {{ scope }}</p>
+    <form method="post">
+        <button name="approve" value="yes" type="submit">Approve</button>
+        <button name="approve" value="no" type="submit">Deny</button>
+    </form>
+</body>
+</html>
