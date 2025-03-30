@@ -1,5 +1,5 @@
-import services
-from libs import exceptions
+from services import login_service, authorize_service, token_service, userinfo_service
+from libs.exceptions import CustomError
 from models import database
 from flask import Flask, request, jsonify, redirect, session, render_template, url_for
 
@@ -12,7 +12,7 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        user = services.login_service.execute(username, password)        
+        user = login_service.execute(username, password)        
         session["user"] = user
         return redirect(session.pop("next") or "/")
 
@@ -28,10 +28,10 @@ def authorize():
         session["next"] = request.url # save to back after login
         return redirect(url_for("login"))
 
-    services.authorize_service.validate_client(client_id, redirect_uri)
+    authorize_service.validate_client(client_id, redirect_uri)
     
     if request.method == "POST":
-        authorization_code = services.authorize_service.execute(request, session, client_id)
+        authorization_code = authorize_service.execute(request, session, client_id)
         return redirect(f"{redirect_uri}?code={authorization_code}")        
     
     return render_template("authorize.html", scope=scope)
@@ -42,7 +42,7 @@ def token():
     client_secret = request.form.get("client_secret")
     code = request.form.get("code")
 
-    id_token, access_token, refresh_token, expires_in = services.token_service.execute(client_id, client_secret, code)
+    id_token, access_token, refresh_token, expires_in = token_service.execute(client_id, client_secret, code)
 
     return jsonify({
         "access_token": access_token,
@@ -54,19 +54,15 @@ def token():
 
 @app.route("/userinfo", methods=["GET"])
 def userinfo():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise exceptions.UnauthorizedError("Missing or invalid token")
-    access_token = auth_header.split(" ")[1]
-
-    user_id, name, email = services.userinfo_service.execute(access_token)
+    access_token = userinfo_service.get_access_token(request)
+    user_id, name, email = userinfo_service.execute(access_token)
     return jsonify({
         "sub": user_id,
         "name": name,
         "email": email
     })
 
-@app.errorhandler(exceptions.CustomError)
+@app.errorhandler(CustomError)
 def handle_custom_error(e):
     return jsonify({"error": e.message}), e.status_code
 

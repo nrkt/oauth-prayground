@@ -2,6 +2,12 @@ import jwt
 from models import dao
 from libs import tokens, exceptions
 
+def get_access_token(request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise exceptions.UnauthorizedError("Missing or invalid token")
+    return auth_header.split(" ")[1]
+
 def execute(access_token):
     try:
         tokens.decode_access_token(access_token=access_token)
