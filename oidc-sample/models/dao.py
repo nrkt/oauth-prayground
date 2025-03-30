@@ -12,7 +12,8 @@ def get_client(client_id):
 
 # TODO: scope
 def save_auth_code(code, client_id, user_id):
-    expires_at = int(time.time()) + 300 # Code valid for 5 minutes
+    now = int(datetime.now(timezone.utc).timestamp())
+    expires_at = now + 300 # Code valid for 5 minutes
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("INSERT INTO auth_codes (code, client_id, user_id, expires_at) VALUES (?, ?, ?, ?)", (code, client_id, user_id, expires_at))

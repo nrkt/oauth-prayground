@@ -18,7 +18,7 @@ VALUES ('userid1', 'username1', 'useremail1', 'userpassword1');
 
 3. Start server
 ```sh
-python3 oidc-server.py
+python3 oidc_server.py
 ```
 
 4. Get authorization code
@@ -51,7 +51,7 @@ curl -X POST http://127.0.0.1:5002/token \
 
 8. Get userInfo (Access with access token)
 ```sh
-curl -H "Authorization: Bearer <access_token>" "http://127.0.0.1:5002/userinfo?client_id=client123"
+curl -H "Authorization: Bearer <access_token>" "http://127.0.0.1:5002/userinfo"
 ```
 ```
 {

@@ -1,7 +1,8 @@
 import jwt
 import time
 import secrets
-from libs import tokens
+from services import login_service, authorize_service, token_service
+from libs import tokens, exceptions
 from models import dao, database
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify, redirect, session, render_template, url_for
@@ -15,13 +16,8 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        user = dao.get_user_by_name_and_password(username, password)
-
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        
-        session["user"] = user[0]
-        
+        user = login_service.execute(username, password)        
+        session["user"] = user
         return redirect(session.pop("next") or "/")
 
     return render_template("login.html")
@@ -32,52 +28,26 @@ def authorize():
     redirect_uri = request.args.get("redirect_uri")
     scope = request.args.get("scope", "")
 
-    client = dao.get_client(client_id)
-    if not client or client[2] != redirect_uri:
-        return jsonify({"error": "invalid_client"}), 400
-    
     if "user" not in session:
         session["next"] = request.url # save to back after login
         return redirect(url_for("login"))
+
+    authorize_service.validate_client(client_id, redirect_uri)
     
     if request.method == "POST":
-        if request.form.get("approve") == "yes":
-            code = secrets.token_urlsafe(16)
-            user_id = session["user"]
-            dao.save_auth_code(code, client_id, user_id)
-            return redirect(f"{redirect_uri}?code={code}")
-        
-        return "Access denied", 403
+        authorization_code = authorize_service.execute(request, session, client_id)
+        return redirect(f"{redirect_uri}?code={authorization_code}")        
     
     return render_template("authorize.html", scope=scope)
 
 @app.route("/token", methods=["POST"])
 def token():
-    now = datetime.now(timezone.utc).timestamp()
     client_id = request.form.get("client_id")
     client_secret = request.form.get("client_secret")
     code = request.form.get("code")
 
-    client = dao.get_client(client_id)
-    auth_code = dao.get_auth_code(code)
-    if not client or client[1] != client_secret:
-        return jsonify({"error": "invalid_client"}), 400
-    if not auth_code or auth_code[1] != client_id:
-        return jsonify({"error": "invalid_code"}), 400
-    if auth_code[4] == 1:
-        return jsonify({"error": "code_already_used"}), 400
-    if time.time() > auth_code[3]:
-        return jsonify({"error": "code_expired"}), 400
-    dao.mark_auth_code_used(code)
-    user_id = auth_code[2]
+    id_token, access_token, refresh_token, expires_in = token_service.execute(client_id, client_secret, code)
 
-    expires_in = 3600
-    access_token = tokens.encode_access_token(sub = user_id, aud = client_id, exp = now + expires_in)
-    refresh_token = secrets.token_urlsafe(32)
-
-    dao.save_token(access_token, refresh_token, user_id, expires_in)
-    id_token = tokens.create_id_token(user_id, client_id)
-    
     return jsonify({
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -89,15 +59,12 @@ def token():
 @app.route("/userinfo", methods=["GET"])
 def userinfo():
     auth_header = request.headers.get("Authorization")
-    client_id = request.args.get("client_id")
-
     if not auth_header or not auth_header.startswith("Bearer "):
-        return jsonify({"error": "Missing or invalid token"}), 401
-    
+        raise exceptions.UnauthorizedError("Missing or invalid token")
     access_token = auth_header.split(" ")[1]
 
     try:
-        tokens.decode_access_token(access_token=access_token, aud=client_id)
+        tokens.decode_access_token(access_token=access_token)
         user_id = dao.get_user_id_by_token(access_token)
         if not user_id:
             return jsonify({"error": "Access token not found"}), 404
@@ -112,10 +79,13 @@ def userinfo():
             "email": user[2]
         })
     except jwt.ExpiredSignatureError:
-        return jsonify({"error": "ID token has expired"}), 401
+        raise exceptions.UnauthorizedError("ID token has expired")
     except jwt.InvalidTokenError:
-        return jsonify({"error": "Invalid ID token"}), 401
-
+        raise exceptions.UnauthorizedError("Invalid ID token")
+    
+@app.errorhandler(exceptions.CustomError)
+def handle_custom_error(e):
+    return jsonify({"error": e.message}), e.status_code
 
 if __name__ == "__main__":
     database.init_db()
