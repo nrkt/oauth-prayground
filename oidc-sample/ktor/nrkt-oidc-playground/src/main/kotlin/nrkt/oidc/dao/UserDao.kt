@@ -28,6 +28,22 @@ class UserDao {
         }
     }
 
+    fun selectByUserId(
+        id: UserId,
+    ): UserEntity? {
+        return transaction {
+            User.selectAll().where { User.id eq id.value }
+                .map { row ->
+                    UserEntity(
+                        id = UserId(row[User.id]),
+                        name = row[User.name],
+                        email = row[User.email],
+                        password = row[User.password],
+                    )
+                }.singleOrNull()
+        }
+    }
+
     fun insert(
         id: UserId,
         name: String,

@@ -30,7 +30,7 @@ class TokenDao {
         }
     }
 
-    fun getAccessToken(accessToken: AccessToken): TokenEntity? {
+    fun getByAccessToken(accessToken: AccessToken): TokenEntity? {
         return transaction {
             Token.selectAll().where { Token.access_token eq accessToken.value }
                 .map { row ->

@@ -21,6 +21,7 @@ import nrkt.oidc.domain.UserSession
 import nrkt.oidc.routing.authRoutes
 import nrkt.oidc.routing.loginRoutes
 import nrkt.oidc.routing.tokenRoutes
+import nrkt.oidc.routing.userRoutes
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -84,6 +85,10 @@ fun Application.module() {
         route("/oauth2") {
             authRoutes()
             tokenRoutes()
+        }
+
+        route("protected") {
+            userRoutes()
         }
     }
 }

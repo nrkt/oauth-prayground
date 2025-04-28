@@ -75,7 +75,7 @@ class TokenService {
         val secret = "your-256-bit-secret"
         val algorithm = Algorithm.HMAC256(secret)
         val iss = "http://0.0.0.0:8080"
-        val aud = "http://0.0.0.0:8080/protected/userInfo"
+        val aud = "http://0.0.0.0:8080/protected/user"
         return AccessToken(
             JWT.create()
                 .withIssuer(iss)
