@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import java.time.Instant
 
 class AuthCodeDao {
 
@@ -16,14 +17,14 @@ class AuthCodeDao {
         code: AuthorizationCode,
         userId: UserId,
         clientId: ClientId,
-        expiresAt: Long,
+        expiresAt: Instant,
     ): AuthCodeEntity {
         return transaction {
             AuthCode.insert {
                 it[AuthCode.code] = code.code
                 it[AuthCode.userId] = userId.value
                 it[AuthCode.clientId] = clientId.value
-                it[AuthCode.expiresAt] = expiresAt
+                it[AuthCode.expiresAt] = expiresAt.toEpochMilli()
             }
             AuthCodeEntity(
                 code = code,
@@ -44,7 +45,7 @@ class AuthCodeDao {
                         userId = UserId(row[AuthCode.userId]),
                         clientId = ClientId(row[AuthCode.clientId]),
                         used = row[AuthCode.used] == 1,
-                        expiresAt = row[AuthCode.expiresAt],
+                        expiresAt = Instant.ofEpochMilli(row[AuthCode.expiresAt]),
                     )
                 }.singleOrNull()
         }

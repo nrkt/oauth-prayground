@@ -15,7 +15,13 @@ class AuthorizeResources {
         val responseType: ResponseType,
         val clientId: ClientId,
         val redirectUri: String,
-    )
+    ) {
+        init {
+            require(responseType == ResponseType.code) {
+                "Invalid response type: $responseType. Only 'code' is supported."
+            }
+        }
+    }
 
     @Serializable
     @Resource("")
@@ -24,5 +30,11 @@ class AuthorizeResources {
         val responseType: ResponseType,
         val clientId: ClientId,
         val redirectUri: String,
-    )
+    ) {
+        init {
+            require(responseType == ResponseType.code) {
+                "Invalid response type: $responseType. Only 'code' is supported."
+            }
+        }
+    }
 }

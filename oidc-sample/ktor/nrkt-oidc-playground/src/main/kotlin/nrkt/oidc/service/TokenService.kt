@@ -13,7 +13,6 @@ import nrkt.oidc.dao.entity.AuthCodeEntity
 import nrkt.oidc.domain.*
 import nrkt.oidc.resource.TokenResources
 import java.time.Instant
-import java.util.*
 
 class TokenService {
     val relyingPartyDao = RelyingPartyDao()
@@ -69,7 +68,7 @@ class TokenService {
         if (authCodeEntity.used) {
             return false
         }
-        return authCodeEntity.expiresAt >= System.currentTimeMillis()
+        return authCodeEntity.expiresAt >= Instant.now()
     }
 
     private fun generateAccessToken(userId: UserId): AccessToken {
@@ -82,8 +81,8 @@ class TokenService {
                 .withIssuer(iss)
                 .withSubject(userId.value)
                 .withAudience(aud)
-                .withExpiresAt(Date(System.currentTimeMillis() + 3600 * 1000))
-                .withIssuedAt(Date(System.currentTimeMillis()))
+                .withExpiresAt(Instant.now().plusSeconds(3600))
+                .withIssuedAt(Instant.now())
                 .sign(algorithm)
         )
     }
@@ -102,8 +101,8 @@ class TokenService {
                 .withIssuer(iss)
                 .withSubject(userId.value)
                 .withAudience(clientId.value)
-                .withExpiresAt(Date(System.currentTimeMillis() + 3600 * 1000))
-                .withIssuedAt(Date(System.currentTimeMillis()))
+                .withExpiresAt(Instant.now().plusSeconds(3600))
+                .withIssuedAt(Instant.now())
                 .sign(algorithm)
         )
     }

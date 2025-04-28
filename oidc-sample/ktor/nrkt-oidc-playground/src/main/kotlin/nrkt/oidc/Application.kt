@@ -79,8 +79,11 @@ fun Application.module() {
         get("/") {
             call.respondText("Hello, World!")
         }
-        authRoutes()
         loginRoutes()
-        tokenRoutes()
+
+        route("/oauth2") {
+            authRoutes()
+            tokenRoutes()
+        }
     }
 }

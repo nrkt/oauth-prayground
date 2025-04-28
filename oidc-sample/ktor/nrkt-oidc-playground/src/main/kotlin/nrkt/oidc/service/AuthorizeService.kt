@@ -16,6 +16,7 @@ import nrkt.oidc.domain.ClientId
 import nrkt.oidc.domain.UserSession
 import nrkt.oidc.resource.AuthorizeResources
 import nrkt.oidc.resource.LoginResources
+import java.time.Instant
 import java.util.*
 
 class AuthorizeService {
@@ -36,7 +37,7 @@ class AuthorizeService {
 
             call.sessions.set(newSession) // set csrfToken in the session
 
-            val actionUrl = call.application.href(
+            val actionUrl = "/oauth2" + call.application.href(
                 AuthorizeResources.Post(
                     responseType = param.responseType,
                     clientId = param.clientId,
@@ -105,7 +106,7 @@ class AuthorizeService {
                     code = authCode,
                     clientId = param.clientId,
                     userId = userSession.userId,
-                    expiresAt = System.currentTimeMillis() + 3600 * 1000, // 1 hour
+                    expiresAt = Instant.now().plusSeconds(3600),
                 )
 
                 // append code to redirect_uri
