@@ -6,7 +6,7 @@ import io.ktor.server.resources.*
 import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.Route
-import nrkt.oidc.data.resource.TokenResources
+import nrkt.oidc.resource.TokenResources
 import nrkt.oidc.service.TokenService
 
 fun Route.tokenRoutes() {

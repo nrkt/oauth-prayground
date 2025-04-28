@@ -1,4 +1,4 @@
-package nrkt.oidc.data
+package nrkt.oidc.domain
 
 import kotlinx.serialization.Serializable
 

@@ -1,4 +1,4 @@
-package nrkt.oidc.data.resource
+package nrkt.oidc.resource
 
 import io.ktor.resources.*
 import kotlinx.serialization.Serializable

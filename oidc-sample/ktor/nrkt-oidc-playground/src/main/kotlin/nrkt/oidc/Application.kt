@@ -13,8 +13,11 @@ import nrkt.oidc.dao.RelyingPartyDao
 import nrkt.oidc.dao.UserDao
 import nrkt.oidc.dao.tables.AuthCode
 import nrkt.oidc.dao.tables.RelyingParty
+import nrkt.oidc.dao.tables.Token
 import nrkt.oidc.dao.tables.User
-import nrkt.oidc.data.UserSession
+import nrkt.oidc.domain.ClientId
+import nrkt.oidc.domain.UserId
+import nrkt.oidc.domain.UserSession
 import nrkt.oidc.routing.authRoutes
 import nrkt.oidc.routing.loginRoutes
 import nrkt.oidc.routing.tokenRoutes
@@ -40,17 +43,18 @@ fun Application.configureDatabase() {
         create(RelyingParty)
         create(User)
         create(AuthCode)
+        create(Token)
 
         // insert test data
         RelyingPartyDao().insert(
             id = "1",
             name = "Test Relying Party",
-            clientId = "client_id",
+            clientId = ClientId("client_id"),
             clientSecret = "client_secret",
             redirectUri = "http://localhost:8080/callback",
         )
         UserDao().insert(
-            id = "1",
+            id = UserId("1"),
             name = "user",
             password = "password",
             email = "email",

@@ -1,4 +1,4 @@
-package nrkt.oidc.data
+package nrkt.oidc.domain
 
 data class AuthorizationCode(
     val code: String,

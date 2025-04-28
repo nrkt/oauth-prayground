@@ -1,8 +1,9 @@
-package nrkt.oidc.data.resource
+package nrkt.oidc.resource
 
 import io.ktor.resources.*
 import kotlinx.serialization.Serializable
-import nrkt.oidc.data.ResponseType
+import nrkt.oidc.domain.ClientId
+import nrkt.oidc.domain.ResponseType
 
 @Serializable
 @Resource("/authorize")
@@ -12,7 +13,7 @@ class AuthorizeResources {
     class Get(
         val parent: AuthorizeResources = AuthorizeResources(),
         val responseType: ResponseType,
-        val clientId: String,
+        val clientId: ClientId,
         val redirectUri: String,
     )
 
@@ -21,7 +22,7 @@ class AuthorizeResources {
     class Post(
         val parent: AuthorizeResources = AuthorizeResources(),
         val responseType: ResponseType,
-        val clientId: String,
+        val clientId: ClientId,
         val redirectUri: String,
     )
 }

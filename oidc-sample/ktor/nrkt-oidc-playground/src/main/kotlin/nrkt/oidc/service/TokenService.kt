@@ -8,16 +8,19 @@ import io.ktor.server.plugins.*
 import io.ktor.server.response.*
 import nrkt.oidc.dao.AuthCodeDao
 import nrkt.oidc.dao.RelyingPartyDao
+import nrkt.oidc.dao.TokenDao
 import nrkt.oidc.dao.entity.AuthCodeEntity
-import nrkt.oidc.data.resource.TokenResources
+import nrkt.oidc.domain.*
+import nrkt.oidc.resource.TokenResources
+import java.time.Instant
 import java.util.*
 
 class TokenService {
     val relyingPartyDao = RelyingPartyDao()
     val authCodeDao = AuthCodeDao()
+    val tokenDao = TokenDao()
 
     suspend fun generateTokenByAuthorizationCode(call: ApplicationCall, request: TokenResources.Post.Request) {
-        // check clientId and clientSecret
         if (!validClientIdAndSecret(clientId = request.clientId, clientSecret = request.clientSecret)) {
             call.respondText("Invalid clientId or clientSecret", status = HttpStatusCode.BadRequest)
             return
@@ -30,13 +33,36 @@ class TokenService {
         }
 
         authCodeDao.updateUsed(code = request.code)
-        val idToken = generateToken(userId = authCodeEntity.userId)
-        // TODO: save token
-        call.respondText("Token generated: $idToken", status = HttpStatusCode.OK)
+        val accessToken = generateAccessToken(userId = authCodeEntity.userId)
+        val refreshToken = generateRefreshToken()
+        val idToken = generateIdToken(userId = authCodeEntity.userId, clientId = request.clientId)
+        tokenDao.saveAccessToken(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            userId = authCodeEntity.userId,
+            clientId = authCodeEntity.clientId,
+            expiresAt = Instant.now().plusSeconds(3600)
+        )
+        call.respondText(
+            contentType = ContentType.Application.Json,
+            status = HttpStatusCode.OK,
+            text = """
+                {
+                    "access_token": "${accessToken.value}",
+                    "token_type": "Bearer",
+                    "refresh_token": "${refreshToken.value}", 
+                    "id_token": "${idToken.value}",
+                    "expires_in": 3600
+                }
+                """.trimIndent(),
+        )
     }
 
-    private fun validClientIdAndSecret(clientId: String, clientSecret: String): Boolean {
-        return relyingPartyDao.selectByClientIdAndClientSecret(clientId = clientId, clientSecret = clientSecret) != null
+    private fun validClientIdAndSecret(clientId: ClientId, clientSecret: String): Boolean {
+        return relyingPartyDao.selectByClientIdAndClientSecret(
+            clientId = clientId,
+            clientSecret = clientSecret
+        ) != null
     }
 
     private fun validAuthCode(authCodeEntity: AuthCodeEntity): Boolean {
@@ -46,13 +72,39 @@ class TokenService {
         return authCodeEntity.expiresAt >= System.currentTimeMillis()
     }
 
-    private fun generateToken(userId: String): String {
+    private fun generateAccessToken(userId: UserId): AccessToken {
         val secret = "your-256-bit-secret"
         val algorithm = Algorithm.HMAC256(secret)
-        return JWT.create()
-            .withIssuer("my-issuer")
-            .withSubject(userId)
-            .withExpiresAt(Date(System.currentTimeMillis() + 3600 * 1000))
-            .sign(algorithm)
+        val iss = "http://0.0.0.0:8080"
+        val aud = "http://0.0.0.0:8080/protected/userInfo"
+        return AccessToken(
+            JWT.create()
+                .withIssuer(iss)
+                .withSubject(userId.value)
+                .withAudience(aud)
+                .withExpiresAt(Date(System.currentTimeMillis() + 3600 * 1000))
+                .withIssuedAt(Date(System.currentTimeMillis()))
+                .sign(algorithm)
+        )
+    }
+
+    private fun generateRefreshToken(): RefreshToken {
+        val token = (('a'..'z') + ('0'..'9')).shuffled().take(32).joinToString("")
+        return RefreshToken(token)
+    }
+
+    private fun generateIdToken(userId: UserId, clientId: ClientId): IdToken {
+        val secret = "your-256-bit-secret"
+        val algorithm = Algorithm.HMAC256(secret)
+        val iss = "http://0.0.0.0:8080"
+        return IdToken(
+            JWT.create()
+                .withIssuer(iss)
+                .withSubject(userId.value)
+                .withAudience(clientId.value)
+                .withExpiresAt(Date(System.currentTimeMillis() + 3600 * 1000))
+                .withIssuedAt(Date(System.currentTimeMillis()))
+                .sign(algorithm)
+        )
     }
 }

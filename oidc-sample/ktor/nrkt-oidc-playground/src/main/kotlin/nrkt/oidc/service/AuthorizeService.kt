@@ -11,10 +11,11 @@ import io.ktor.server.sessions.*
 import kotlinx.html.*
 import nrkt.oidc.dao.AuthCodeDao
 import nrkt.oidc.dao.RelyingPartyDao
-import nrkt.oidc.data.AuthorizationCode
-import nrkt.oidc.data.UserSession
-import nrkt.oidc.data.resource.AuthorizeResources
-import nrkt.oidc.data.resource.LoginResources
+import nrkt.oidc.domain.AuthorizationCode
+import nrkt.oidc.domain.ClientId
+import nrkt.oidc.domain.UserSession
+import nrkt.oidc.resource.AuthorizeResources
+import nrkt.oidc.resource.LoginResources
 import java.util.*
 
 class AuthorizeService {
@@ -130,7 +131,7 @@ class AuthorizeService {
         }
     }
 
-    private fun validateClientRedirectUri(clientId: String, redirectUri: String) {
+    private fun validateClientRedirectUri(clientId: ClientId, redirectUri: String) {
         relyingPartyDao.selectByClientId(clientId)?.let {
             if (it.redirectUri == redirectUri) {
                 return
@@ -141,7 +142,7 @@ class AuthorizeService {
     }
 
     private fun generateAuthorizationCode(): AuthorizationCode {
-        val code = (('a'..'z') + ('0'..'9')).shuffled().take(8).joinToString("")
+        val code = (('a'..'z') + ('0'..'9')).shuffled().take(16).joinToString("")
         return AuthorizationCode(code = code)
     }
 

@@ -1,7 +1,7 @@
-package nrkt.oidc.data
+package nrkt.oidc.domain
 
 data class UserSession(
-    val userId: String,
+    val userId: UserId,
     val username: String,
     val csrfToken: String? = null,
 )

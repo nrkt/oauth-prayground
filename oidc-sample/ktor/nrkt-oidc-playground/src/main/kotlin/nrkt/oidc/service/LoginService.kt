@@ -6,9 +6,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.sessions.*
 import nrkt.oidc.dao.UserDao
-import nrkt.oidc.data.UserLoginRequest
-import nrkt.oidc.data.UserSession
-import nrkt.oidc.data.resource.LoginResources
+import nrkt.oidc.domain.UserLoginRequest
+import nrkt.oidc.domain.UserSession
+import nrkt.oidc.resource.LoginResources
 
 class LoginService {
     val userDao = UserDao()

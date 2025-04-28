@@ -1,11 +1,13 @@
 package nrkt.oidc.dao.entity
 
-import nrkt.oidc.data.AuthorizationCode
+import nrkt.oidc.domain.AuthorizationCode
+import nrkt.oidc.domain.ClientId
+import nrkt.oidc.domain.UserId
 
 data class AuthCodeEntity(
     val code: AuthorizationCode,
-    val userId: String,
-    val clientId: String,
+    val userId: UserId,
+    val clientId: ClientId,
     val used: Boolean,
     val expiresAt: Long,
 )

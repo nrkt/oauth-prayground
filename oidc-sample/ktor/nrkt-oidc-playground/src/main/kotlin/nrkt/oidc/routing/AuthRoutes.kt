@@ -4,7 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.resources.*
 import io.ktor.server.resources.post
 import io.ktor.server.routing.*
-import nrkt.oidc.data.resource.AuthorizeResources
+import nrkt.oidc.resource.AuthorizeResources
 import nrkt.oidc.service.AuthorizeService
 
 fun Route.authRoutes() {

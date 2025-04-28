@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.sessions)
     implementation(libs.ktor.server.resources)
+    implementation(libs.ktor.server.data.conversion)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.html.builder)
     implementation(libs.ktor.serialization.kotlinx.json)

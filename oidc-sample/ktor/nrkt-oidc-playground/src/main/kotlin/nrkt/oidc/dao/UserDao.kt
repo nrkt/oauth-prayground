@@ -2,6 +2,7 @@ package nrkt.oidc.dao
 
 import nrkt.oidc.dao.entity.UserEntity
 import nrkt.oidc.dao.tables.User
+import nrkt.oidc.domain.UserId
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
@@ -18,7 +19,7 @@ class UserDao {
             User.selectAll().where { (User.name eq name) and (User.password eq password) }
                 .map { row ->
                     UserEntity(
-                        id = row[User.id],
+                        id = UserId(row[User.id]),
                         name = row[User.name],
                         email = row[User.email],
                         password = row[User.password],
@@ -28,14 +29,14 @@ class UserDao {
     }
 
     fun insert(
-        id: String,
+        id: UserId,
         name: String,
         email: String,
         password: String
     ): UserEntity {
         return transaction {
             User.insert {
-                it[User.id] = id
+                it[User.id] = id.value
                 it[User.name] = name
                 it[User.email] = email
                 it[User.password] = password

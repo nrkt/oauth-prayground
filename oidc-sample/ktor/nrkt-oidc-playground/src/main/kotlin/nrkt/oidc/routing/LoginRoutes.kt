@@ -8,8 +8,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import kotlinx.html.*
-import nrkt.oidc.data.UserSession
-import nrkt.oidc.data.resource.LoginResources
+import nrkt.oidc.domain.UserSession
+import nrkt.oidc.resource.LoginResources
 import nrkt.oidc.service.LoginService
 
 fun Route.loginRoutes() {
